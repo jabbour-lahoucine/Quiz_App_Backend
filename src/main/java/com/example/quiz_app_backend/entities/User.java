@@ -23,7 +23,5 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<UserQuizStats> userQuizStats;
-
-    // Getters and Setters
 }
 
