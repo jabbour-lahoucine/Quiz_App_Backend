@@ -1,13 +1,13 @@
 package com.example.quiz_app_backend.services;
 
-import com.example.quiz_app_backend.entities.Answer;
-import com.example.quiz_app_backend.entities.Question;
-import com.example.quiz_app_backend.entities.Quiz;
-import com.example.quiz_app_backend.entities.User;
-import com.example.quiz_app_backend.repositories.AnswerRepository;
-import com.example.quiz_app_backend.repositories.QuestionRepository;
-import com.example.quiz_app_backend.repositories.QuizRepository;
-import com.example.quiz_app_backend.repositories.UserRepository;
+import com.example.quiz_app_backend.dto.AnswerDTO;
+import com.example.quiz_app_backend.dto.QuizDTO;
+import com.example.quiz_app_backend.entities.*;
+import com.example.quiz_app_backend.enums.Difficulty;
+import com.example.quiz_app_backend.enums.QuestionType;
+import com.example.quiz_app_backend.enums.TypeQuiz;
+import com.example.quiz_app_backend.enums.Visibility;
+import com.example.quiz_app_backend.repositories.*;
 import com.example.quiz_app_backend.util.AccessCodeGenerator;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class QuizService {
@@ -26,38 +28,51 @@ public class QuizService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private QuestionRepository questionRepository;
+    private CategoryRepository categoryRepository;
     @Autowired
     private AnswerRepository answerRepository;
+    @Autowired
+    private UserQuizStatsRepository userQuizStatsRepository;
 
     @Transactional
-    public String createQuiz(Quiz quiz, Long creatorId) {
-        // Fetch and set the creator
-        User creator = userRepository.findById(creatorId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        quiz.setCreator(creator);
-        String accessCode = AccessCodeGenerator.generateAccessCode();
-        quiz.setAccessCode(accessCode);
-        // Persist each question and its answers
-        List<Question> managedQuestions = new ArrayList<>();
-        for (Question question : quiz.getQuestions()) {
-            question.setQuiz(quiz); // Set the parent relationship
+    public Quiz createQuiz(Long userId, QuizDTO quizDTO) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Category category = categoryRepository.findById(quizDTO.getCategoryId()).orElseThrow(() -> new RuntimeException("Category not found"));
 
-            List<Answer> managedAnswers = new ArrayList<>();
-            for (Answer answer : question.getOptions()) {
-                answer.setQuestion(question); // Set the parent relationship
-                managedAnswers.add(answer);
-            }
-            question.setOptions(managedAnswers);
-            managedQuestions.add(question);
-        }
-        quiz.setQuestions(managedQuestions);
+        Quiz quiz = new Quiz();
+        quiz.setTitle(quizDTO.getTitle());
+        quiz.setDescription(quizDTO.getDescription());
+        quiz.setDifficulty(Difficulty.valueOf(quizDTO.getDifficulty()));
+        quiz.setVisibility(Visibility.valueOf(quizDTO.getVisibility()));
+        quiz.setAccessCode(quizDTO.getAccessCode());
+        quiz.setTimeLimit(quizDTO.getTimeLimit());
+        quiz.setMaxAttempts(quizDTO.getMaxAttempts());
+        quiz.setType(TypeQuiz.valueOf(quizDTO.getType()));
+        quiz.setCreator(user);
+        quiz.setCategory(category);
 
-        // Save the quiz along with cascaded relationships
-        quizRepository.saveAndFlush(quiz);
-        return accessCode;
+        List<Question> questions = quizDTO.getQuestions().stream().map(questionDTO -> {
+            Question question = new Question();
+            question.setContent(questionDTO.getContent());
+            question.setType(QuestionType.valueOf(questionDTO.getType()));
+            question.setQuiz(quiz);
+
+            List<Answer> answers = questionDTO.getOptions().stream().map(answerDTO -> {
+                Answer answer = new Answer();
+                answer.setContent(answerDTO.getContent());
+                answer.setCorrect(answerDTO.isCorrect());
+                answer.setQuestion(question);
+                return answer;
+            }).collect(Collectors.toList());
+
+            question.setOptions(answers);
+            return question;
+        }).collect(Collectors.toList());
+
+        quiz.setQuestions(questions);
+
+        return quizRepository.save(quiz);
     }
-
     @Transactional
     public Quiz updateQuiz(Long id, Quiz updatedQuiz) {
         Quiz existingQuiz = quizRepository.findById(id)
@@ -130,16 +145,14 @@ public class QuizService {
 
     @Transactional
     public Quiz participateQuizByAccessCode(String accessCode) {
-        Quiz quiz = quizRepository.findByAccessCode(accessCode)
+        return quizRepository.findByAccessCode(accessCode)
                 .orElseThrow(() -> new IllegalArgumentException("Quiz not found with access code: " + accessCode));
-        return quiz;
     }
 
     @Transactional
     public Quiz getQuizById(Long id) {
-        Quiz quiz = quizRepository.findById(id)
+        return quizRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quiz not found with id: " + id));
-        return quiz;
     }
 
     @Transactional
@@ -149,5 +162,53 @@ public class QuizService {
 
     public List<Quiz> getQuizzesByCategory(Long categoryId) {
         return quizRepository.findByCategory_Id(categoryId);
+    }
+
+    @Transactional
+    public void startQuiz(Long userId, Long quizId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Quiz quiz = quizRepository.findById(quizId).orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        UserQuizStats userQuizStats = new UserQuizStats();
+        userQuizStats.setUser(user);
+        userQuizStats.setQuiz(quiz);
+        userQuizStats.setStartTime(new Date());
+
+        userQuizStatsRepository.save(userQuizStats);
+    }
+
+    @Transactional
+    public int submitQuiz(Long userId, Long quizId, List<AnswerDTO> submittedAnswers) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Quiz quiz = quizRepository.findById(quizId).orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        int score = 0;
+        for (AnswerDTO submittedAnswer : submittedAnswers) {
+            Answer answer = answerRepository.findById(submittedAnswer.getId())
+                    .orElseThrow(() -> new RuntimeException("Answer not found"));
+            if (answer.isCorrect() == submittedAnswer.isCorrect()) {
+                score++;
+            }
+        }
+
+        UserQuizStats userQuizStats = userQuizStatsRepository.findByUserAndQuiz(user, quiz)
+                .orElseThrow(() -> new RuntimeException("Quiz start time not found"));
+        userQuizStats.setScore(score);
+        userQuizStats.setTimeTaken(calculateTimeTaken(userQuizStats.getStartTime(), new Date())); // Calculate time taken
+        userQuizStats.setAttempts(userQuizStats.getAttempts() + 1);
+        userQuizStats.setAttemptDate(new Date());
+        userQuizStats.setEndTime(new Date()); // Set end time to current date
+
+        userQuizStatsRepository.save(userQuizStats);
+
+        return score;
+    }
+
+    private int calculateTimeTaken(Date startTime, Date endTime) {
+        if (startTime == null || endTime == null) {
+            return 0;
+        }
+        long differenceInMillis = endTime.getTime() - startTime.getTime();
+        return (int) (differenceInMillis / 1000); // Convert milliseconds to seconds
     }
 }

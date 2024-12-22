@@ -1,5 +1,7 @@
 package com.example.quiz_app_backend.controllers;
 
+import com.example.quiz_app_backend.dto.AnswerDTO;
+import com.example.quiz_app_backend.dto.QuizDTO;
 import com.example.quiz_app_backend.entities.Quiz;
 import com.example.quiz_app_backend.services.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +16,10 @@ import java.util.List;
 public class QuizController {
     @Autowired
     private QuizService quizService;
-    @PostMapping("/creat/{creatorId}")
-    public ResponseEntity<String> createQuiz(@RequestBody Quiz quiz, @PathVariable Long creatorId) {
-        String createdQuiz = quizService.createQuiz(quiz, creatorId);
-        return new ResponseEntity<>(createdQuiz, HttpStatus.CREATED);
+    @PostMapping("/{userId}/create")
+    public ResponseEntity<Quiz> createQuiz(@PathVariable Long userId, @RequestBody QuizDTO quizDTO) {
+        Quiz quiz = quizService.createQuiz(userId, quizDTO);
+        return ResponseEntity.ok(quiz);
     }
 
     @PutMapping("/{id}")
@@ -53,6 +55,19 @@ public class QuizController {
     public ResponseEntity<List<Quiz>> findByCategory(@PathVariable Long categoryId) {
         List<Quiz> quizzes = quizService.getQuizzesByCategory(categoryId);
         return ResponseEntity.ok(quizzes);
+    }
+
+    //score of the quiz
+    @PostMapping("/{userId}/{quizId}/submit")
+    public ResponseEntity<Integer> submitQuiz(@PathVariable Long userId, @PathVariable Long quizId, @RequestBody List<AnswerDTO> submittedAnswers) {
+        int score = quizService.submitQuiz(userId, quizId, submittedAnswers);
+        return ResponseEntity.ok(score);
+    }
+
+    @PostMapping("/{userId}/{quizId}/start")
+    public ResponseEntity<Void> startQuiz(@PathVariable Long userId, @PathVariable Long quizId) {
+        quizService.startQuiz(userId, quizId);
+        return ResponseEntity.ok().build();
     }
 
 }

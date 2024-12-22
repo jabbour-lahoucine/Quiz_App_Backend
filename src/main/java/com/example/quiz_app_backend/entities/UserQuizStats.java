@@ -20,8 +20,14 @@ public class UserQuizStats {
     private int timeTaken;
     private int attempts;
 
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date attemptDate;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date startTime;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date endTime;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -30,7 +36,5 @@ public class UserQuizStats {
     @ManyToOne
     @JoinColumn(name = "quiz_id")
     private Quiz quiz;
-
-    // Getters and Setters
 }
 
