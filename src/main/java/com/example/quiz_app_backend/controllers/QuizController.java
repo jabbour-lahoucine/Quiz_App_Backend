@@ -7,6 +7,7 @@ import com.example.quiz_app_backend.dto.QuizDTO;
 import com.example.quiz_app_backend.entities.Quiz;
 import com.example.quiz_app_backend.entities.UserQuizStats;
 import com.example.quiz_app_backend.services.QuizService;
+import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,12 +20,15 @@ import java.util.List;
 public class QuizController {
     @Autowired
     private QuizService quizService;
+
+    //creation of the quiz
     @PostMapping("/{userId}/create")
     public ResponseEntity<Quiz> createQuiz(@PathVariable Long userId, @RequestBody QuizDTO quizDTO) {
         Quiz quiz = quizService.createQuiz(userId, quizDTO);
         return ResponseEntity.ok(quiz);
     }
 
+    //Update the quiz
     @PutMapping("/{id}")
     public ResponseEntity<Quiz> updateQuiz(@PathVariable Long id, @RequestBody Quiz quiz) {
         Quiz updatedQuiz = quizService.updateQuiz(id, quiz);
@@ -42,18 +46,21 @@ public class QuizController {
         return ResponseEntity.ok(quizzes);
     }
 
+    //participate to a public the quiz
     @GetMapping("participateToPublicQuiz/{id}")
     public ResponseEntity<Quiz> participateToPublicQuiz(@PathVariable Long id) {
         Quiz quiz = quizService.getQuizById(id);
         return ResponseEntity.ok(quiz);
     }
 
+    //participate to a private quiz
     @GetMapping("/participateToPrivateQuiz/{accessCode}")
     public ResponseEntity<Quiz> participateToPrivateQuiz(@PathVariable String accessCode) {
         Quiz quiz = quizService.participateQuizByAccessCode(accessCode);
         return ResponseEntity.ok(quiz);
     }
 
+    //get List ofv quizzes by category
     @GetMapping("/byCategory/{categoryId}")
     public ResponseEntity<List<Quiz>> findByCategory(@PathVariable Long categoryId) {
         List<Quiz> quizzes = quizService.getQuizzesByCategory(categoryId);
@@ -73,18 +80,22 @@ public class QuizController {
         return ResponseEntity.ok().build();
     }
 
+    // performance in one quiz
     @GetMapping("/{quizId}/leaderboard")
     public ResponseEntity<List<LeaderboardEntryDTO>> getLeaderboard(@PathVariable Long quizId) {
         List<LeaderboardEntryDTO> leaderboard = quizService.getLeaderboard(quizId);
         return ResponseEntity.ok(leaderboard);
     }
 
+    //public quizzes for bibliotheque
     @GetMapping("/bibliotheque/publicQuizzes")
     public ResponseEntity<List<Quiz>> getPublicQuizzes() {
         List<Quiz> quizzes = quizService.getPublicQuizzes();
         return ResponseEntity.ok(quizzes);
     }
 
+
+    //performance report for the  user since the use if the app
     @GetMapping("/{userId}/performance-report")
     public ResponseEntity<PerformanceReportDTO> getPerformanceReport(@PathVariable Long userId) {
         PerformanceReportDTO report = quizService.getPerformanceReport(userId);
