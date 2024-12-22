@@ -1,8 +1,10 @@
 package com.example.quiz_app_backend.controllers;
 
 import com.example.quiz_app_backend.dto.AnswerDTO;
+import com.example.quiz_app_backend.dto.LeaderboardEntryDTO;
 import com.example.quiz_app_backend.dto.QuizDTO;
 import com.example.quiz_app_backend.entities.Quiz;
+import com.example.quiz_app_backend.entities.UserQuizStats;
 import com.example.quiz_app_backend.services.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -68,6 +70,12 @@ public class QuizController {
     public ResponseEntity<Void> startQuiz(@PathVariable Long userId, @PathVariable Long quizId) {
         quizService.startQuiz(userId, quizId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{quizId}/leaderboard")
+    public ResponseEntity<List<LeaderboardEntryDTO>> getLeaderboard(@PathVariable Long quizId) {
+        List<LeaderboardEntryDTO> leaderboard = quizService.getLeaderboard(quizId);
+        return ResponseEntity.ok(leaderboard);
     }
 
 }

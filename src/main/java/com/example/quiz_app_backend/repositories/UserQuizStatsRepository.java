@@ -6,10 +6,13 @@ import com.example.quiz_app_backend.entities.UserQuizStats;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface UserQuizStatsRepository extends JpaRepository<UserQuizStats, Long> {
 
     Optional<UserQuizStats> findByUserAndQuiz(User user, Quiz quiz);
+
+    List<UserQuizStats> findByQuizOrderByScoreDesc(Quiz quiz);
 }

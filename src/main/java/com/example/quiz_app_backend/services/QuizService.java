@@ -1,6 +1,7 @@
 package com.example.quiz_app_backend.services;
 
 import com.example.quiz_app_backend.dto.AnswerDTO;
+import com.example.quiz_app_backend.dto.LeaderboardEntryDTO;
 import com.example.quiz_app_backend.dto.QuizDTO;
 import com.example.quiz_app_backend.entities.*;
 import com.example.quiz_app_backend.enums.Difficulty;
@@ -210,5 +211,16 @@ public class QuizService {
         }
         long differenceInMillis = endTime.getTime() - startTime.getTime();
         return (int) (differenceInMillis / 1000); // Convert milliseconds to seconds
+    }
+
+    //the Ranking of users in a specific quiz
+    public List<LeaderboardEntryDTO> getLeaderboard(Long quizId) {
+        Quiz quiz = quizRepository.findById(quizId).orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        // Retrieve and sort user scores for the quiz
+        List<UserQuizStats> stats = userQuizStatsRepository.findByQuizOrderByScoreDesc(quiz);
+
+        // Convert to DTOs
+        return stats.stream().map(LeaderboardEntryDTO::new).collect(Collectors.toList());
     }
 }
