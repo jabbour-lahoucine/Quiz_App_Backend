@@ -2,6 +2,7 @@ package com.example.quiz_app_backend.controllers;
 
 import com.example.quiz_app_backend.dto.AnswerDTO;
 import com.example.quiz_app_backend.dto.LeaderboardEntryDTO;
+import com.example.quiz_app_backend.dto.PerformanceReportDTO;
 import com.example.quiz_app_backend.dto.QuizDTO;
 import com.example.quiz_app_backend.entities.Quiz;
 import com.example.quiz_app_backend.entities.UserQuizStats;
@@ -84,4 +85,9 @@ public class QuizController {
         return ResponseEntity.ok(quizzes);
     }
 
+    @GetMapping("/{userId}/performance-report")
+    public ResponseEntity<PerformanceReportDTO> getPerformanceReport(@PathVariable Long userId) {
+        PerformanceReportDTO report = quizService.getPerformanceReport(userId);
+        return ResponseEntity.ok(report);
+    }
 }

@@ -2,6 +2,7 @@ package com.example.quiz_app_backend.services;
 
 import com.example.quiz_app_backend.dto.AnswerDTO;
 import com.example.quiz_app_backend.dto.LeaderboardEntryDTO;
+import com.example.quiz_app_backend.dto.PerformanceReportDTO;
 import com.example.quiz_app_backend.dto.QuizDTO;
 import com.example.quiz_app_backend.entities.*;
 import com.example.quiz_app_backend.enums.Difficulty;
@@ -225,5 +226,39 @@ public class QuizService {
     //return the public quizzes only for the bibliotheque of quizzes
     public List<Quiz> getPublicQuizzes() {
         return quizRepository.findByVisibility(Visibility.PUBLIC);
+    }
+
+    //return the rapport about the performance of the user in the app
+    @Transactional
+    public PerformanceReportDTO getPerformanceReport(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<UserQuizStats> userQuizStatsList = userQuizStatsRepository.findByUser(user);
+
+        List<PerformanceReportDTO.QuizPerformanceDTO> quizPerformances = userQuizStatsList.stream().map(stats -> {
+            PerformanceReportDTO.QuizPerformanceDTO quizPerformance = new PerformanceReportDTO.QuizPerformanceDTO();
+            quizPerformance.setQuizTitle(stats.getQuiz().getTitle());
+            quizPerformance.setScore(stats.getScore());
+            quizPerformance.setTimeTaken(stats.getTimeTaken());
+            quizPerformance.setAttemptDate(stats.getAttemptDate());
+
+            List<PerformanceReportDTO.QuestionPerformanceDTO> questionPerformances = stats.getQuiz().getQuestions().stream().map(question -> {
+                PerformanceReportDTO.QuestionPerformanceDTO questionPerformance = new PerformanceReportDTO.QuestionPerformanceDTO();
+                questionPerformance.setQuestionContent(question.getContent());
+                questionPerformance.setCorrect(question.getOptions().stream().anyMatch(answer -> answer.isCorrect() && answer.isSelected()));
+
+                return questionPerformance;
+            }).collect(Collectors.toList());
+
+            quizPerformance.setQuestionPerformances(questionPerformances);
+
+            return quizPerformance;
+        }).collect(Collectors.toList());
+
+        PerformanceReportDTO report = new PerformanceReportDTO();
+        report.setUsername(user.getUsername());
+        report.setQuizPerformances(quizPerformances);
+
+        return report;
     }
 }

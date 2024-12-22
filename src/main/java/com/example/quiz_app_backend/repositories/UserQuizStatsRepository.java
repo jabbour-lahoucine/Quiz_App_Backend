@@ -15,4 +15,6 @@ public interface UserQuizStatsRepository extends JpaRepository<UserQuizStats, Lo
     Optional<UserQuizStats> findByUserAndQuiz(User user, Quiz quiz);
 
     List<UserQuizStats> findByQuizOrderByScoreDesc(Quiz quiz);
+
+    List<UserQuizStats> findByUser(User user);
 }
