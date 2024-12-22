@@ -217,10 +217,13 @@ public class QuizService {
     public List<LeaderboardEntryDTO> getLeaderboard(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId).orElseThrow(() -> new RuntimeException("Quiz not found"));
 
-        // Retrieve and sort user scores for the quiz
         List<UserQuizStats> stats = userQuizStatsRepository.findByQuizOrderByScoreDesc(quiz);
 
-        // Convert to DTOs
         return stats.stream().map(LeaderboardEntryDTO::new).collect(Collectors.toList());
+    }
+
+    //return the public quizzes only for the bibliotheque of quizzes
+    public List<Quiz> getPublicQuizzes() {
+        return quizRepository.findByVisibility(Visibility.PUBLIC);
     }
 }

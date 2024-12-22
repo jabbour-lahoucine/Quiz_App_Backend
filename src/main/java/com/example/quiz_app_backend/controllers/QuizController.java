@@ -78,4 +78,10 @@ public class QuizController {
         return ResponseEntity.ok(leaderboard);
     }
 
+    @GetMapping("/bibliotheque/publicQuizzes")
+    public ResponseEntity<List<Quiz>> getPublicQuizzes() {
+        List<Quiz> quizzes = quizService.getPublicQuizzes();
+        return ResponseEntity.ok(quizzes);
+    }
+
 }
