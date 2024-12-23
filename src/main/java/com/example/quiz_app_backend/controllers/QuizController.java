@@ -5,8 +5,10 @@ import com.example.quiz_app_backend.dto.LeaderboardEntryDTO;
 import com.example.quiz_app_backend.dto.PerformanceReportDTO;
 import com.example.quiz_app_backend.dto.QuizDTO;
 import com.example.quiz_app_backend.entities.Quiz;
+import com.example.quiz_app_backend.entities.User;
 import com.example.quiz_app_backend.entities.UserQuizStats;
 import com.example.quiz_app_backend.services.QuizService;
+import com.example.quiz_app_backend.services.UserService;
 import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -100,5 +102,22 @@ public class QuizController {
     public ResponseEntity<PerformanceReportDTO> getPerformanceReport(@PathVariable Long userId) {
         PerformanceReportDTO report = quizService.getPerformanceReport(userId);
         return ResponseEntity.ok(report);
+    }
+
+
+    // Edit profil
+    @PutMapping("/{userId}/editProfile")
+    public ResponseEntity<User> editUserProfile(
+            @PathVariable Long userId,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String bio
+    ) {
+        // Créer une instance de UserService
+        UserService userService = new UserService();
+
+        // Appeler la méthode non statique
+        User updatedUser = userService.editUserProfile(userId, username, email, bio);
+        return ResponseEntity.ok(updatedUser);
     }
 }
